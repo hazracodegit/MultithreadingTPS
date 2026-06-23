@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Threaded Task Processor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="background"></div>
+
+<main class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <span>MT</span>
+            <div>
+                <strong>Task Processor</strong>
+                <small>Priority workers</small>
+            </div>
+        </div>
+        <nav>
+            <button class="nav-item active" data-view="dashboard">Dashboard</button>
+            <button class="nav-item" data-view="tasks">Tasks</button>
+            <button class="nav-item" data-view="analytics">Analytics</button>
+            <button class="nav-item" data-view="logs">Logs</button>
+        </nav>
+        <div class="session-card">
+            <small>Signed in as</small>
+            <strong id="sessionUser">Guest</strong>
+            <button id="logoutBtn" class="ghost hidden">Logout</button>
+        </div>
+    </aside>
+
+    <section class="main-panel">
+        <section id="authView" class="auth-layout">
+            <div class="auth-copy">
+                <p class="eyebrow">Java • Spring Boot • Hibernate • SQLite</p>
+                <h1>Full-stack multi-threaded task execution dashboard</h1>
+                <p>Register or log in to create priority tasks, schedule future work, add dependencies, and monitor worker throughput in real time.</p>
+            </div>
+            <div class="auth-card">
+                <div class="tabs">
+                    <button class="tab active" data-auth-tab="login">Login</button>
+                    <button class="tab" data-auth-tab="register">Register</button>
+                </div>
+
+                <form id="loginForm" class="auth-form">
+                    <label>Username<input id="loginUsername" required></label>
+                    <label>Password<input id="loginPassword" type="password" required></label>
+                    <button type="submit">Login</button>
+                </form>
+
+                <form id="registerForm" class="auth-form hidden">
+                    <label>Username<input id="registerUsername" required minlength="3"></label>
+                    <label>Email<input id="registerEmail" type="email" required></label>
+                    <label>Password<input id="registerPassword" type="password" required minlength="6"></label>
+                    <label>Role
+                        <select id="registerRole">
+                            <option value="USER">User</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </label>
+                    <button type="submit">Create Account</button>
+                </form>
+                <p id="authMessage" class="message"></p>
+            </div>
+        </section>
+
+        <section id="dashboardView" class="workspace hidden">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Live system monitor</p>
+                    <h2>Execution Dashboard</h2>
+                </div>
+                <span id="liveState">Connecting</span>
+            </header>
+
+            <section class="stats-grid">
+                <article class="stat-card"><span>Active Threads</span><strong id="activeThreadCount">0</strong></article>
+                <article class="stat-card"><span>Queue Size</span><strong id="queueSize">0</strong></article>
+                <article class="stat-card"><span>Total Tasks</span><strong id="totalTasks">0</strong></article>
+                <article class="stat-card"><span>Completed</span><strong id="completedTasks">0</strong></article>
+                <article class="stat-card"><span>Failed</span><strong id="failedTasks">0</strong></article>
+                <article class="stat-card"><span>Pending</span><strong id="pendingTasks">0</strong></article>
+                <article class="stat-card"><span>Success Rate</span><strong><span id="successRate">0</span>%</strong></article>
+                <article class="stat-card"><span>Avg Time</span><strong><span id="averageExecutionTime">0</span>ms</strong></article>
+            </section>
+
+            <section class="content-grid">
+                <form id="taskForm" class="panel task-form">
+                    <div class="panel-heading">
+                        <h3>Create Task</h3>
+                        <button type="submit">Queue Task</button>
+                    </div>
+                    <label>Name<input id="taskName" required maxlength="140"></label>
+                    <label>Description<textarea id="taskDescription" required rows="3"></textarea></label>
+                    <div class="form-row">
+                        <label>Priority
+                            <select id="priority">
+                                <option value="HIGH">High</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="LOW">Low</option>
+                            </select>
+                        </label>
+                        <label>Execution ms<input id="executionTime" type="number" min="500" value="3000" step="500"></label>
+                        <label>Timeout ms<input id="timeoutMillis" type="number" min="1000" value="15000" step="1000"></label>
+                    </div>
+                    <label>Dependency task IDs<input id="dependencyIds" placeholder="Example: 1, 2"></label>
+                    <label>Schedule time<input id="scheduledAt" type="datetime-local"></label>
+                    <p id="taskMessage" class="message"></p>
+                </form>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Analytics</h3>
+                        <span id="updatedAt">Waiting</span>
+                    </div>
+                    <canvas id="analyticsChart" width="520" height="260"></canvas>
+                    <div class="metrics-list">
+                        <div><span>Throughput</span><strong><span id="throughput">0</span> / min</strong></div>
+                        <div><span>Failure Rate</span><strong><span id="failureRate">0</span>%</strong></div>
+                        <div><span>Retry Rate</span><strong><span id="retryRate">0</span>%</strong></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <h3>Task Cards</h3>
+                    <span>Auto-refresh every 2 seconds</span>
+                </div>
+                <div id="taskCards" class="task-cards"></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <h3>Lifecycle Logs</h3>
+                    <span>TaskLogs table</span>
+                </div>
+                <div id="logs" class="logs"></div>
+            </section>
+        </section>
+    </section>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
